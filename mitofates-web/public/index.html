@@ -4,43 +4,110 @@
     <meta charset="UTF-8">
     <title>MitoFates Web Service</title>
     <style>
-        body { font-family: sans-serif; margin: 40px; line-height: 1.6; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f4f4f4; }
-        .loading { color: blue; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; line-height: 1.6; color: #333; max-width: 1000px; margin: auto; padding: 20px; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .card { background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        textarea { width: 100%; font-family: 'Courier New', Courier, monospace; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; resize: vertical; }
+        .divider { text-align: center; margin: 15px 0; font-style: italic; color: #888; position: relative; }
+        .divider::before, .divider::after { content: ""; position: absolute; top: 50%; width: 45%; height: 1px; background: #ddd; }
+        .divider::before { left: 0; } .divider::after { right: 0; }
+        select, input[type="file"] { margin-bottom: 15px; }
+        button { cursor: pointer; padding: 10px 20px; border: none; border-radius: 4px; font-weight: bold; transition: 0.3s; }
+        .btn-primary { background-color: #3498db; color: white; font-size: 1.1em; }
+        .btn-primary:hover { background-color: #2980b9; }
+        .btn-example { background-color: #95a5a6; color: white; margin-bottom: 10px; }
+        .btn-example:hover { background-color: #7f8c8d; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
+        th, td { border: 1px solid #ddd; padding: 12px 8px; text-align: left; }
+        th { background-color: #2c3e50; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        tr:hover { background-color: #e9ecef; }
+        .loading { color: #3498db; font-weight: bold; display: flex; align-items: center; }
+        .status-msg { margin-top: 20px; padding: 10px; border-radius: 4px; }
     </style>
 </head>
 <body>
     <h1>MitoFates 蛋白質預測服務</h1>
-    <form id="uploadForm">
-        <label>選擇 FASTA 檔案：</label>
-        <input type="file" id="fastaFile" name="fastaFile" required><br><br>
-        <label>生物類別：</label>
-        <select name="organism">
-            <option value="fungi">Fungi (真菌)</option>
-            <option value="metazoa">Metazoa (動物)</option>
-            <option value="plant">Plant (植物)</option>
-        </select><br><br>
-        <button type="submit">開始分析</button>
-    </form>
+    
+    <div class="card">
+        <button type="button" class="btn-example" id="btnExample">填入範例序列 (Example)</button>
+        
+        <form id="uploadForm">
+            <label for="fastaText">直接貼上蛋白質序列 (FASTA 格式):</label>
+            <textarea id="fastaText" name="fastaText" rows="8" placeholder=">Protein_Name&#10;MLSLRQSIRFFKPATRTLCSSRYLL..."></textarea>
+            
+            <div class="divider">或者</div>
+            
+            <label for="fastaFile">上傳 FASTA 檔案：</label>
+            <input type="file" id="fastaFile" name="fastaFile">
+            
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            
+            <label>選擇預測模型 (生物類別)：</label>
+            <select name="organism" id="organism">
+                <option value="fungi">Fungi (真菌)</option>
+                <option value="metazoa">Metazoa (動物)</option>
+                <option value="plant">Plant (植物)</option>
+            </select>
+            
+            <br>
+            <button type="submit" class="btn-primary">開始執行分析</button>
+        </form>
+    </div>
 
     <div id="status"></div>
-    <div id="resultArea"></div>
+    <div id="resultArea" style="overflow-x: auto;"></div>
 
     <script>
+        // 範例資料
+        const exampleFasta = `>YDR178W-P37298
+MLSLRQSIRFFKPATRTLCSSRYLLQQKPVVTAHRFFSSSLRRSAFTAKAA
+>YJR100C-P47140
+MLRRFSSYLGKYVANKQKAFALRTLSASSVLSRNIFTSPKV`;
+
+        // 範例按鈕功能
+        document.getElementById('btnExample').onclick = () => {
+            document.getElementById('fastaText').value = exampleFasta;
+            document.getElementById('fastaFile').value = ""; // 清空檔案選擇
+        };
+
         document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
             const status = document.getElementById('status');
             const resultArea = document.getElementById('resultArea');
-            status.innerHTML = '<p class="loading">運算中，請稍候...</p>';
+            const fastaText = document.getElementById('fastaText').value;
+            const fileInput = document.getElementById('fastaFile');
+            
+            status.innerHTML = '<p class="loading">正在運行 MitoFates 預測引擎，請稍候...</p>';
             resultArea.innerHTML = '';
 
-            const formData = new FormData(e.target);
+            const formData = new FormData();
+            
+            // 判斷優先順序：文字框 > 檔案
+            if (fastaText.trim() !== "") {
+                const blob = new Blob([fastaText], { type: 'text/plain' });
+                formData.append('fastaFile', blob, 'input.fasta');
+            } else if (fileInput.files.length > 0) {
+                formData.append('fastaFile', fileInput.files[0]);
+            } else {
+                status.innerHTML = '<p style="color:red;">請提供序列內容或選擇檔案！</p>';
+                return;
+            }
+
+            formData.append('organism', document.getElementById('organism').value);
+
             try {
                 const response = await fetch('/predict', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error('伺服器回應錯誤');
+                
                 const data = await response.json();
                 
+                if (data.length === 0) {
+                    status.innerHTML = '<p style="color:orange;">分析完成，但未找到有效結果。</p>';
+                    return;
+                }
+
                 let table = '<table><thead><tr>';
                 Object.keys(data[0]).forEach(key => table += `<th>${key}</th>`);
                 table += '</tr></thead><tbody>';
@@ -52,10 +119,10 @@
                 });
                 table += '</tbody></table>';
                 
-                status.innerHTML = '<p style="color:green;">分析完成！</p>';
+                status.innerHTML = '<p style="color:green; font-weight:bold;">分析完成！</p>';
                 resultArea.innerHTML = table;
             } catch (err) {
-                status.innerHTML = '<p style="color:red;">發生錯誤，請檢查後端日誌。</p>';
+                status.innerHTML = '<p style="color:red;">發生錯誤：' + err.message + ' (請確認後端 server.js 運作正常)</p>';
             }
         };
     </script>
