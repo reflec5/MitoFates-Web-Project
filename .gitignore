@@ -1,0 +1,13 @@
+# 忽略 Node.js 套件
+mitofates-web/node_modules/
+
+# 忽略上傳暫存檔
+mitofates-web/uploads/*
+!mitofates-web/uploads/.gitkeep
+
+# 忽略 Perl 執行過程產生的暫存檔
+MitoFates/script/bin/modules/_Inline/
+
+# 忽略系統雜物
+.DS_Store
+Thumbs.db

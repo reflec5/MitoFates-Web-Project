@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>MitoFates Web Service</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; line-height: 1.6; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .loading { color: blue; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>MitoFates 蛋白質預測服務</h1>
+    <form id="uploadForm">
+        <label>選擇 FASTA 檔案：</label>
+        <input type="file" id="fastaFile" name="fastaFile" required><br><br>
+        <label>生物類別：</label>
+        <select name="organism">
+            <option value="fungi">Fungi (真菌)</option>
+            <option value="metazoa">Metazoa (動物)</option>
+            <option value="plant">Plant (植物)</option>
+        </select><br><br>
+        <button type="submit">開始分析</button>
+    </form>
+
+    <div id="status"></div>
+    <div id="resultArea"></div>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const status = document.getElementById('status');
+            const resultArea = document.getElementById('resultArea');
+            status.innerHTML = '<p class="loading">運算中，請稍候...</p>';
+            resultArea.innerHTML = '';
+
+            const formData = new FormData(e.target);
+            try {
+                const response = await fetch('/predict', { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                let table = '<table><thead><tr>';
+                Object.keys(data[0]).forEach(key => table += `<th>${key}</th>`);
+                table += '</tr></thead><tbody>';
+                
+                data.forEach(row => {
+                    table += '<tr>';
+                    Object.values(row).forEach(val => table += `<td>${val}</td>`);
+                    table += '</tr>';
+                });
+                table += '</tbody></table>';
+                
+                status.innerHTML = '<p style="color:green;">分析完成！</p>';
+                resultArea.innerHTML = table;
+            } catch (err) {
+                status.innerHTML = '<p style="color:red;">發生錯誤，請檢查後端日誌。</p>';
+            }
+        };
+    </script>
+</body>
+</html>
