@@ -100,7 +100,4 @@ node server.js
     ├── uploads/         # 上傳序列暫存目錄 (分析完畢後自動刪除)
     └── package.json     # 專案依賴與腳本定義
 ```
-```
-
----
 
