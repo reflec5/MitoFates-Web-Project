@@ -1,4 +1,16 @@
+# Node.js 依賴
 node_modules/
+
+# 暫存檔：不應上傳使用者上傳的序列檔
+mitofates-web/uploads/*
+!mitofates-web/uploads/.gitkeep
+
+# 執行結果：這是教授特別交代的
+# 忽略 results 資料夾下的所有 JSON 檔案，但不忽略資料夾本身
+mitofates-web/results/*.json
+
+# 系統檔案
+.DS_Storenode_modules/
 uploads/*
 !uploads/.gitkeep
 .DS_Store

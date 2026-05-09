@@ -1,0 +1,53 @@
+{
+  "taskId": "8406c07af2284696",
+  "createTime": "2026-05-09T17:07:59.428Z",
+  "organism": "fungi",
+  "data": [
+    {
+      "Sequence ID": "YDR178W-P37298",
+      "Probability of presequence": "0.991",
+      "Prediction": "Possessing mitochondrial presequence",
+      "Cleavage site (processing enzyme)": "36(MPP), 44(Oct1)",
+      "Net charge": "0.194",
+      "Positions for TOM20 recognition motif (deliminated by comma)": "33-37",
+      "Position of amphypathic alpha-helix": "9-18-high",
+      "BHHPPP": "-",
+      "BPHBHH": "-",
+      "HBHHBb": "8-13",
+      "HBHHbB": "-",
+      "HHBHHB": "-",
+      "HHBPHB": "-",
+      "HHBPHH": "-",
+      "HHBPHP": "-",
+      "HHHBBH": "-",
+      "HHHBPH": "-",
+      "HHHHBB": "-",
+      "HHPBHH": "-",
+      "HPBHHP": "-",
+      "PHHBPH": "-"
+    },
+    {
+      "Sequence ID": "YJR100C-P47140",
+      "Probability of presequence": "0.973",
+      "Prediction": "Possessing mitochondrial presequence",
+      "Cleavage site (processing enzyme)": "24(MPP), 32(Oct1)",
+      "Net charge": "0.250",
+      "Positions for TOM20 recognition motif (deliminated by comma)": "9-13",
+      "Position of amphypathic alpha-helix": "1-13-high",
+      "BHHPPP": "-",
+      "BPHBHH": "-",
+      "HBHHBb": "-",
+      "HBHHbB": "-",
+      "HHBHHB": "-",
+      "HHBPHB": "-",
+      "HHBPHH": "-",
+      "HHBPHP": "21-26",
+      "HHHBBH": "-",
+      "HHHBPH": "20-25",
+      "HHHHBB": "-",
+      "HHPBHH": "-",
+      "HPBHHP": "-",
+      "PHHBPH": "-"
+    }
+  ]
+}
