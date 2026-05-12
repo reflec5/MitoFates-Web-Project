@@ -5,6 +5,10 @@ mitofates-web/node_modules/
 mitofates-web/uploads/*
 !mitofates-web/uploads/.gitkeep
 
+# 任務執行結果 (忽略所有生成的 JSON，保留 .gitkeep)
+mitofates-web/results/*.json
+!mitofates-web/results/.gitkeep
+
 # 忽略 Perl 執行過程產生的暫存檔
 MitoFates/script/bin/modules/_Inline/
 
