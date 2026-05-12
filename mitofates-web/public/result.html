@@ -19,69 +19,118 @@
         .prob-bar-fill { height: 100%; transition: width 0.5s; }
         .prob-text { font-weight: bold; margin-right: 8px; display: inline-block; width: 45px; }
 
-        .btn-back { background-color: #95a5a6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 20px; }
+        .btn { background-color: #95a5a6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 20px; cursor: pointer; }
+        .btn:hover { background-color: #7f8c8d; }
         .loading { text-align: center; font-size: 1.2em; color: #3498db; margin-top: 50px; }
+
+        .copy-text { color: #e00000; }
+        .fade-animation { opacity: 1; animation-name: fadeOpacity; animation-iteration-count: 1; animation-timing-function: ease-in; animation-duration: 3s; }
+        @keyframes fadeOpacity { 0% { opacity: 0; } 5% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; }}
     </style>
 </head>
 <body>
     <h1>MitoFates 分析報告</h1>
+    <a>注意：報告內容只會保留14天</a>
+    <br>
+    <br>
     <div id="contentArea">
         <div class="loading">正在載入分析結果...</div>
     </div>
-    <a href="/" class="btn-back">← 返回重新分析</a>
+    <a href="/" class="btn">← 返回重新分析</a>
+    <a onclick="downloadResult()" class="btn">下載結果(json)</a>
+    <a onclick="shareResult()" class="btn">分享結果</a>
+    <a id="copyText" class="copy-text" hidden>連結已複製</a>
 
-    <script>
-        async function loadResult() {
-            const taskId = window.location.pathname.split('/').pop();
-            const contentArea = document.getElementById('contentArea');
+    <script type="module">
+        const taskId = window.location.pathname.split('/').pop();
+        const contentArea = document.getElementById('contentArea');
 
-            try {
-                const response = await fetch(`/api/result/${taskId}`);
-                if (!response.ok) throw new Error('找不到結果檔案');
-                const taskData = await response.json();
+        var taskData;
+        
+        // 下載結果
+        function downloadResult() {
+            if (!taskData) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(taskData, null, 2));
+            const downloadAnchorElem = document.createElement('a');
+            
+            downloadAnchorElem.setAttribute("href", dataStr);
+            downloadAnchorElem.setAttribute("download", `result-${taskId}.json`);
 
-                let html = `
-                    <div class="info-card">
-                        <div><span class="info-label">任務 ID:</span> ${taskData.taskId}</div>
-                        <div><span class="info-label">分析時間:</span> ${new Date(taskData.createTime).toLocaleString()}</div>
-                        <div><span class="info-label">生物類別:</span> ${taskData.organism.toUpperCase()}</div>
-                    </div>
-                `;
-
-                if (taskData.data && taskData.data.length > 0) {
-                    const headers = Object.keys(taskData.data[0]);
-                    html += '<div style="overflow-x:auto;"><table><thead><tr>';
-                    headers.forEach(h => html += `<th>${h}</th>`);
-                    html += '</tr></thead><tbody>';
-
-                    taskData.data.forEach(row => {
-                        html += '<tr>';
-                        headers.forEach(h => {
-                            let val = row[h] || '-';
-                            
-                            // 機率美化：如果是 Probability 相關欄位
-                            if (h.toLowerCase().includes('prob')) {
-                                const p = parseFloat(val);
-                                if (!isNaN(p)) {
-                                    const color = p > 0.385 ? '#27ae60' : '#7f8c8d';
-                                    val = `
-                                        <span class="prob-text" style="color:${color}">${p}</span>
-                                        <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:${p*100}%; background:${color}"></div></div>
-                                    `;
-                                }
-                            }
-                            html += `<td>${val}</td>`;
-                        });
-                        html += '</tr>';
-                    });
-                    html += '</tbody></table></div>';
-                }
-                contentArea.innerHTML = html;
-            } catch (err) {
-                contentArea.innerHTML = `<div style="color:red; padding:20px;">讀取失敗：${err.message}</div>`;
-            }
+            document.body.appendChild(downloadAnchorElem);
+            downloadAnchorElem.click();
+            downloadAnchorElem.remove();
         }
-        window.onload = loadResult;
+
+        // 複製連結
+        async function shareResult() {
+            navigator.clipboard.writeText(window.location.href);
+            document.getElementById('copyText').hidden = false;
+            document.getElementById('copyText').classList.add('fade-animation');
+            setTimeout(() => {
+                document.getElementById('copyText').hidden = true;
+                document.getElementById('copyText').classList.remove('fade-animation');
+            } ,3000);
+        }
+
+        // 使用id呼叫
+        try {
+            const response = await fetch(`/api/result/${taskId}`);
+            if (!response.ok) throw new Error('找不到檔案，請檢察連結是否正確。');
+            taskData = await response.json();
+
+            // 記錄分析時間
+            var pastResult = localStorage.getItem('pastResult');
+            if (pastResult) {
+                var pastResultArray = pastResult.split('|');
+                var lastResultArray = pastResultArray[pastResultArray.length - 1].split(';');
+                console.log(lastResultArray[0] === taskData.taskId);
+                console.log(lastResultArray[1] === 'null');
+                if (lastResultArray[0] === taskData.taskId && lastResultArray[1] === 'null') {
+                    lastResultArray[1] = new Date(taskData.createTime).toLocaleString();
+                }
+                pastResultArray[pastResultArray.length - 1] = lastResultArray.join(';');
+                localStorage.setItem("pastResult", pastResultArray.join('|'));
+            }
+
+            let html = `
+                <div class="info-card">
+                    <div><span class="info-label">任務 ID:</span> ${taskData.taskId}</div>
+                    <div><span class="info-label">分析時間:</span> ${new Date(taskData.createTime).toLocaleString()}</div>
+                    <div><span class="info-label">生物類別:</span> ${taskData.organism}</div>
+                </div>
+            `;
+            if (taskData.data && taskData.data.length > 0) {
+                const headers = Object.keys(taskData.data[0]);
+                html += '<div style="overflow-x:auto;"><table><thead><tr>';
+                headers.forEach(h => html += `<th>${h}</th>`);
+                html += '</tr></thead><tbody>';
+
+                taskData.data.forEach(row => {
+                    html += '<tr>';
+                    headers.forEach(h => {
+                        let val = row[h] || '-';
+                        
+                        // 機率美化：如果是 Probability 相關欄位
+                        if (h.toLowerCase().includes('prob')) {
+                            const p = parseFloat(val);
+                            if (!isNaN(p)) {
+                                const color = p > 0.385 ? '#27ae60' : '#7f8c8d';
+                                val = `
+                                    <span class="prob-text" style="color:${color}">${p}</span>
+                                    <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:${p*100}%; background:${color}"></div></div>
+                                `;
+                            }
+                        }
+                        html += `<td>${val}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            contentArea.innerHTML = html;
+        } catch (err) {
+            contentArea.innerHTML = `<div style="color:red; padding:20px;">讀取失敗：${err.message}</div>`;
+        }
     </script>
 </body>
 </html>

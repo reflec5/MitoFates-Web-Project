@@ -25,8 +25,8 @@ app.use(express.json());
 // ---------------------------------------------------------
 // [自動清理機制] 每小時執行一次，刪除 14 天前的 JSON 檔案
 // ---------------------------------------------------------
-const CLEANUP_INTERVAL = 60 * 60 * 1000; 
-const EXPIRATION_TIME = 14 * 24 * 60 * 60 * 1000; 
+const CLEANUP_INTERVAL = 60 * 60 * 1000;
+const EXPIRATION_TIME = 14 * 24 * 60 * 60 * 1000;
 
 setInterval(() => {
     console.log('🧹 執行背景清理：正在掃描過期任務...');
@@ -53,6 +53,12 @@ app.get('/result/:taskId', (req, res) => {
 });
 
 app.get('/api/result/:taskId', (req, res) => {
+    const taskId = req.params.taskId;
+    // 檢查是否符合ID格式
+    if(!/^[a-f0-9]{16}$/.test(taskId)){ 
+        res.status(400).json({ error: 'ID有誤' });
+        return;
+    }
     const resultPath = path.join(RESULTS_DIR, `${req.params.taskId}.json`);
     if (fs.existsSync(resultPath)) {
         res.sendFile(resultPath);
@@ -66,7 +72,7 @@ app.post('/predict', upload.single('fastaFile'), (req, res) => {
 
     const taskId = crypto.randomBytes(8).toString('hex');
     const filePath = path.resolve(req.file.path);
-    const organism = req.body.organism || 'fungi';
+    const organism = req.body.organism in ['fungi', 'metazoa', 'plant'] ? req.body.organism : 'fungi'; // 預防code injection
 
     const command = `export PERL5LIB=$PERL5LIB:${MITOFATES_ROOT}/bin/modules && export PATH=$PATH:/usr/bin && perl ${MITOFATES_SCRIPT} ${filePath} ${organism}`;
 
@@ -100,6 +106,7 @@ app.post('/predict', upload.single('fastaFile'), (req, res) => {
             };
 
             fs.writeFileSync(path.join(RESULTS_DIR, `${taskId}.json`), JSON.stringify(taskData, null, 2));
+            console.log(taskData);
             res.json({ taskId });
 
         } catch (e) {
