@@ -4,9 +4,16 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const cors = require('cors');
+
+const PORT = 3000;
 
 const app = express();
 const upload = multer({ dest: 'uploads/' });
+const allowedOrigins = [
+    'http://localhost:' + PORT,
+    // 這邊輸入上線後使用的網域
+];
 
 // 設定 MitoFates 腳本路徑
 const MITOFATES_ROOT = path.join(__dirname, '../MitoFates/script');
@@ -21,6 +28,7 @@ if (!fs.existsSync(RESULTS_DIR)) {
 
 app.use(express.static('public'));
 app.use(express.json());
+app.use(cors());
 
 // ---------------------------------------------------------
 // [自動清理機制] 每小時執行一次，刪除 14 天前的 JSON 檔案
@@ -72,18 +80,22 @@ app.post('/predict', upload.single('fastaFile'), (req, res) => {
 
     const taskId = crypto.randomBytes(8).toString('hex');
     const filePath = path.resolve(req.file.path);
-    const organism = req.body.organism in ['fungi', 'metazoa', 'plant'] ? req.body.organism : 'fungi'; // 預防code injection
+    const organism = ['fungi', 'metazoa', 'plant'].includes(req.body.organism) ? req.body.organism : 'fungi'; // 預防code injection
 
     const command = `export PERL5LIB=$PERL5LIB:${MITOFATES_ROOT}/bin/modules && export PATH=$PATH:/usr/bin && perl ${MITOFATES_SCRIPT} ${filePath} ${organism}`;
 
     console.log(`[${taskId}] 開始分析...`);
 
-    exec(command, { cwd: MITOFATES_ROOT, maxBuffer: 1024 * 5000 }, (error, stdout, stderr) => {
+    exec(command, { cwd: MITOFATES_ROOT, maxBuffer: 1024 * 5000, timeout: 30000}, (error, stdout, stderr) => {
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
         if (error) {
             console.error(`執行錯誤: ${error}`);
-            return res.status(500).json({ error: '引擎執行失敗', details: stderr });
+            if (error.killed) {
+                return res.status(500).json({ error: '執行超時', details: stderr });
+            } else {
+                return res.status(500).json({ error: '引擎執行失敗', details: stderr });
+            }
         }
 
         try {
@@ -115,7 +127,6 @@ app.post('/predict', upload.single('fastaFile'), (req, res) => {
     });
 });
 
-const PORT = 3000;
 app.listen(PORT, () => {
     console.log('===========================================');
     console.log(`🚀 服務運行中: http://localhost:${PORT}`);

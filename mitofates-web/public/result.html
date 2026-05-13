@@ -60,6 +60,7 @@
             downloadAnchorElem.click();
             downloadAnchorElem.remove();
         }
+        window.downloadResult = downloadResult;
 
         // 複製連結
         async function shareResult() {
@@ -71,6 +72,7 @@
                 document.getElementById('copyText').classList.remove('fade-animation');
             } ,3000);
         }
+        window.shareResult = shareResult;
 
         // 使用id呼叫
         try {

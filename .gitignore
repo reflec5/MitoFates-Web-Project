@@ -1,5 +1,6 @@
 # 忽略 Node.js 套件
 mitofates-web/node_modules/
+npm-debug.log*
 
 # 忽略上傳暫存檔
 mitofates-web/uploads/*
@@ -15,3 +16,5 @@ MitoFates/script/bin/modules/_Inline/
 # 忽略系統雜物
 .DS_Store
 Thumbs.db
+
+*/.vscode/*

@@ -70,7 +70,7 @@
 
         // 顯示歷史記錄
         const pastResult = localStorage.getItem('pastResult');
-        if (pastResult == '') {
+        if (['', null].includes(pastResult)) {
             document.getElementById('contentArea').innerHTML = `<a class="copy-text">沒有分析記錄</a>`;
         } else {
             var html = '';
